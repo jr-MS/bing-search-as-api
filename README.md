@@ -4,6 +4,10 @@
 
 This FastAPI application provides a search endpoint that leverages Azure AI Project Client and Bing Grounding to process user queries. It initializes an AI agent with Bing Grounding capabilities, creates conversation threads, and retrieves relevant search results to provide accurate responses.
 
+Example output:
+![Screenshot 2025-04-03 125616](https://github.com/user-attachments/assets/748fad33-8282-49c5-99c7-62e54ec299ca)
+
+
 ## Features
 
 -   **Search Endpoint:** Accepts a query string and returns search results using Bing Grounding.
