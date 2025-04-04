@@ -32,6 +32,10 @@ async def search(query: str = Query(..., description="Search query")):
     print("Step 0: Validating environment variables...")  
     project_conn_str = os.environ.get("PROJECT_CONNECTION_STRING_ENV")
     bing_connection_name = os.environ.get("BING_CONNECTION_NAME_ENV")
+    agent_name = os.environ.get("AGENT_NAME")
+    agent_instructions = os.environ.get("AGENT_INSTRUCTIONS")
+    agent_llm = os.environ.get("AGENT_LLM", 'gpt-4o')
+
     missing_vars = []
     if not project_conn_str:
         missing_vars.append("PROJECT_CONNECTION_STRING_ENV")
@@ -67,16 +71,20 @@ async def search(query: str = Query(..., description="Search query")):
   
             # Initialize the Bing Grounding tool with the connection ID  
             bing_tool = BingGroundingTool(connection_id=bing_conn_id)  
-  
-            # Step 3: Create an agent with the Bing Grounding tool  
-            print("Step 3: Creating agent with Bing Grounding Tool...")  
-            agent = project_client.agents.create_agent(  
-                model='gpt-4o',  
-                name='bing-grounding-agent',  
-                instructions='You are an API that uses bing grounding to handle all queries.  Always use the bing grounding tool to answer the user\'s question and provide the tool response.',  
-                tools=bing_tool.definitions,  
-                headers={"x-ms-enable-preview": "true"}  
-            )  
+
+            agents = project_client.agents.list_agents()
+            agent = next((a for a in agents.data if a.name == agent_name), None)
+
+            if agent is None:
+                # Step 3: Create an agent with the Bing Grounding tool  
+                print("Step 3: Creating agent with Bing Grounding Tool...")  
+                agent = project_client.agents.create_agent(  
+                    model=agent_llm,  
+                    name=agent_name,  
+                    instructions=agent_instructions,  
+                    tools=bing_tool.definitions,  
+                    headers={"x-ms-enable-preview": "true"}  
+                )  
             print(f"Created agent, ID: {agent.id}")  
   
             # Step 4: Create a conversation thread  
@@ -104,19 +112,6 @@ async def search(query: str = Query(..., description="Search query")):
             if run.status == "failed":  
                 print(f"Run failed: {run.last_error}")  
             else:  
-                # Step 7: Retrieve run step details to get Bing Search query link  
-                print("Step 7: Retrieving run step details...")  
-                run_steps = project_client.agents.list_run_steps(  
-                    run_id=run.id,  
-                    thread_id=thread.id  
-                )  
-                run_steps_data = run_steps.get('data', [])  
-                if run_steps_data:  
-                    last_run_step = run_steps_data[-1]  
-                    print(f"Last run step detail: {last_run_step}")  
-                else:  
-                    print("No run step details found.")  
-  
                 # Step 8: Retrieve and print the agent's response  
                 print("Step 8: Retrieving agent's response...")  
                 messages = project_client.agents.list_messages(thread_id=thread.id)  
@@ -126,13 +121,12 @@ async def search(query: str = Query(..., description="Search query")):
                     print(f"Agent Response: {last_msg.text.value}")  
                 else:  
                     print("No response from the agent.")  
-                    # TODO: Implement your search logic here
                 return {"response": last_msg}
   
-            # Step 9: Clean up resources  
-            print("Step 9: Cleaning up resources...")  
-            project_client.agents.delete_agent(agent.id)  
-            print(f"Deleted agent (ID: {agent.id})")  
+            # Step 9 (optional): Clean up resources  
+            #print("Step 9: Cleaning up resources...")  
+            #project_client.agents.delete_agent(agent.id)  
+            #print(f"Deleted agent (ID: {agent.id})")  
   
     except Exception as e:  
         print(f"An error occurred: {e}")  
