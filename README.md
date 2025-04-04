@@ -12,7 +12,8 @@ Example request:
 
 Example response:
 
-json```{
+```
+{
   "response": {
     "type": "text",
     "text": {
@@ -31,7 +32,8 @@ json```{
       ]
     }
   }
-}```
+}
+```
 
 ## Features
 
