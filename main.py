@@ -32,9 +32,8 @@ async def search(query: str = Query(..., description="Search query")):
     print("Step 0: Validating environment variables...")  
     project_conn_str = os.environ.get("PROJECT_CONNECTION_STRING_ENV")
     bing_connection_name = os.environ.get("BING_CONNECTION_NAME_ENV")
-    agent_name = os.environ.get("AGENT_NAME")
-    agent_instructions = os.environ.get("AGENT_INSTRUCTIONS")
-    agent_llm = os.environ.get("AGENT_LLM", 'gpt-4o')
+    agent_name = "new-agent"
+
 
     missing_vars = []
     if not project_conn_str:
@@ -61,31 +60,31 @@ async def search(query: str = Query(..., description="Search query")):
         print("Azure AI Project Client initialized.")  
   
         with project_client:  
-            # Step 2: Enable the Grounding with Bing search tool  
-            print("Step 2: Enabling Bing Grounding Tool...")  
-            bing_connection = project_client.connections.get(  
-                connection_name=bing_connection_name  
-            )  
-            bing_conn_id = bing_connection.id  
-            print(f"Bing connection ID: {bing_conn_id}")  
-  
-            # Initialize the Bing Grounding tool with the connection ID  
-            bing_tool = BingGroundingTool(connection_id=bing_conn_id)  
+
+            # Step 2: Enable the Grounding with Bing search tool
+            print("Step 2: Enabling Bing Grounding Tool...")
+            # print("BING_CONNECTION_NAME_ENV:", os.environ.get("BING_CONNECTION_NAME_ENV"))
+
+
+            # Initialize the Bing Grounding tool with the connection name
+            bing_tool = BingGroundingTool(connection_id=bing_connection_name)
 
             agents = project_client.agents.list_agents()
+            # print(f"Available agents:{agents.data}")
             agent = next((a for a in agents.data if a.name == agent_name), None)
+            # print(f"Agent found: {agent}")
 
             if agent is None:
                 # Step 3: Create an agent with the Bing Grounding tool  
                 print("Step 3: Creating agent with Bing Grounding Tool...")  
                 agent = project_client.agents.create_agent(  
-                    model=agent_llm,  
-                    name=agent_name,  
-                    instructions=agent_instructions,  
+                    model="gpt-4o-increasing-rate",  # Model deployment name
+                    name="new-agent",  
+                    instructions="you are a helpful agent",  
                     tools=bing_tool.definitions,  
                     headers={"x-ms-enable-preview": "true"}  
                 )  
-            print(f"Created agent, ID: {agent.id}")  
+                print(f"Created agent, ID: {agent.id}")  
   
             # Step 4: Create a conversation thread  
             print("Step 4: Creating conversation thread...")  
